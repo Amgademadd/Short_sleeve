@@ -1,8 +1,21 @@
-#root {
-  width: 100vw;
-  height: 100vh;
+/* Page + editor look */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: #1f1f1f;
+  font-family: system-ui, Arial, sans-serif;
+  color: #fff;
 }
 
-body {
-  margin: 0;
+/* placeholder for empty contentEditable boxes */
+[contenteditable]:empty::before {
+  content: "Double-click to edit";
+  color: #aaa;
+}
+
+/* faint checkerboard for layout canvas */
+.layout-bg {
+  background:
+    conic-gradient(#0000 90deg, #e5e5e5 0) 50% / 20px 20px;
 }
