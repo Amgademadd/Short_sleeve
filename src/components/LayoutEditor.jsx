@@ -5,8 +5,8 @@ export default function LayoutEditor({ box, setBox, text }) {
   return (
     <div
       style={{
-        width: "300px",
-        height: "400px",
+        width: "280px",
+        height: "280px",
         position: "relative",
         border: "2px dashed gray",
         background: "white",

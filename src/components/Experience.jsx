@@ -1,15 +1,15 @@
-import { ContactShadows, Environment, Float, OrbitControls } from "@react-three/drei";
-import { TShirt } from "./Tshirt";
+import { OrbitControls, Environment } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import Tshirt from "./Tshirt";
 
-export default function Experience({ decalURL }) {
+export default function Experience({ text, box, activeSide }) {
   return (
-    <>
-      <OrbitControls enablePan={false} enableZoom />
-      <Float speed={1} rotationIntensity={0.25} floatIntensity={0.3}>
-        <TShirt decalURL={decalURL} />
-      </Float>
-      <ContactShadows position={[0, -1.2, 0]} opacity={0.4} scale={10} blur={2}/>
-<Environment preset="city" background />
-    </>
+<Canvas camera={{ position: [0, 1.2, 3], fov: 50 }}>
+      <OrbitControls />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 5, 5]} intensity={1} />
+      <Tshirt text={text} box={box} activeSide={activeSide} />
+      <Environment preset="sunset" />
+    </Canvas>
   );
 }
