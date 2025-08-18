@@ -1,28 +1,33 @@
-import { Canvas } from "@react-three/fiber";
 import React, { useState } from "react";
-import Experience from "./components/Experience";
-import LayoutEditor from "./components/LayoutEditor";
-import "./index.css";
+import { Canvas } from "@react-three/fiber";
+import { Stage } from "@react-three/drei";
+import Tshirt from "./components/Tshirt";
 
 export default function App() {
-  const [decalURL, setDecalURL] = useState(null);
+  const [text, setText] = useState("Hello World");
 
   return (
-    <div style={{display:"flex", width:"100%", height:"100%"}}>
-      {/* 3D view */}
-      <div style={{flex:1, position:"relative"}}>
-        <Canvas shadows camera={{ position: [0, 0.2, 5], fov: 45 }}>
-          <Experience decalURL={decalURL} />
-        </Canvas>
+    <div style={{ height: "100vh", width: "100vw" }}>
+      {/* Live text input */}
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          padding: "10px",
+          fontSize: "16px",
+          zIndex: 10,
+        }}
+      />
 
-        {/* helpful hint */}
-        <div style={{position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.5)", padding:"8px 10px", borderRadius:6, fontSize:12}}>
-          1) Add text/images → 2) Export → decal is applied to the T-shirt
-        </div>
-      </div>
-
-      {/* Layout editor panel */}
-      <LayoutEditor onExport={(png) => setDecalURL(png)} />
+      <Canvas camera={{ position: [0, 0, 3] }}>
+        <Stage environment="city" intensity={0.6}>
+          <Tshirt text={text} /> {/* ✅ pass text prop */}
+        </Stage>
+      </Canvas>
     </div>
   );
 }
