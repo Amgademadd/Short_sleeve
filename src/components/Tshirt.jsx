@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Decal, useGLTF } from "@react-three/drei";
-import { useControls } from "leva";
-import * as THREE from "three";   // ✅ Fix: import THREE
+import * as THREE from "three";
 
-// Utility: create a canvas texture with text
+// Utility: generate text texture
 function useTextTexture(text, options = {}) {
   return useMemo(() => {
     const {
@@ -17,13 +16,11 @@ function useTextTexture(text, options = {}) {
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
-    // background
     if (background !== "transparent") {
       ctx.fillStyle = background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // text
     ctx.fillStyle = color;
     ctx.font = font;
     ctx.textAlign = "center";
@@ -36,26 +33,17 @@ function useTextTexture(text, options = {}) {
   }, [text, options]);
 }
 
-export default function Tshirt({ text = "My Custom Text" }) { // ✅ accept live text as prop
+export default function Tshirt({ text, box }) {
   const { nodes } = useGLTF("/models/tshirt.glb");
 
-  // Custom text texture (live)
   const textTexture = useTextTexture(text, {
     font: "bold 80px Arial",
     color: "red",
   });
 
-  // Decal controls
-  const [pos, setPos] = useState([0, 1.5, 0.2]);
-  const [rotation, setRotation] = useState([0, 0, 0]);
-  const [scale, setScale] = useState([2, 2, 2]);
-
-  useControls({
-    posX: { value: pos[0], min: -2, max: 2, step: 0.01, onChange: (v) => setPos(([_, y, z]) => [v, y, z]) },
-    posY: { value: pos[1], min: 0, max: 3, step: 0.01, onChange: (v) => setPos(([x, _, z]) => [x, v, z]) },
-    posZ: { value: pos[2], min: -2, max: 2, step: 0.01, onChange: (v) => setPos(([x, y, _]) => [x, y, v]) },
-    scale: { value: scale[0], min: 0.5, max: 5, step: 0.01, onChange: (v) => setScale([v, v, v]) },
-  });
+  // Map 2D box → 3D space
+  const pos = [box.x / 100, 1.5 - box.y / 100, 0.2];
+  const scale = [box.width / 150, box.height / 150, 1];
 
   return (
     <group dispose={null}>
@@ -64,14 +52,15 @@ export default function Tshirt({ text = "My Custom Text" }) { // ✅ accept live
         if (node.isMesh) {
           return (
             <mesh key={key} geometry={node.geometry} material={node.material}>
-              <Decal position={pos} rotation={rotation} scale={scale}>
-                <meshStandardMaterial
-                  map={textTexture} // ✅ using live text as decal
-                  transparent
-                  toneMapped={false}
-                  polygonOffset
-                  polygonOffsetFactor={-1}
-                />
+<Decal position={pos} rotation={[0, 0, 0]} scale={scale}>
+  <meshStandardMaterial
+    map={textTexture}
+    transparent
+    toneMapped={false}
+    polygonOffset
+    polygonOffsetFactor={-1}
+    side={THREE.FrontSide} // Fix is here!
+  />
               </Decal>
             </mesh>
           );

@@ -1,61 +1,42 @@
-import { useState } from "react"
-import Draggable from "react-draggable"
+import React from "react";
+import { Rnd } from "react-rnd";
 
-export default function LayoutEditor({ onExport }) {
-  const [items, setItems] = useState([
-    {
-      id: "text-1",
-      type: "text",
-      content: "Drag me!",
-      position: { x: 50, y: 50 }, // ✅ must initialize x and y
-    },
-  ])
-
-  const handleDrag = (id, e, data) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, position: { x: data.x, y: data.y } }
-          : item
-      )
-    )
-    console.log(`📍 Item ${id} dragged to: x=${data.x}, y=${data.y}`)
-  }
-
+export default function LayoutEditor({ box, setBox, text }) {
   return (
     <div
       style={{
-        width: "400px",
-        height: "500px",
-        border: "2px dashed gray",
-        margin: "20px",
+        width: "300px",
+        height: "400px",
         position: "relative",
-        overflow: "hidden",
-        background: "#fff",
+        border: "2px dashed gray",
+        background: "white",
       }}
     >
-      {items.map((item) => (
-        <Draggable
-          key={item.id}
-          position={{ x: item.position?.x || 0, y: item.position?.y || 0 }} // ✅ fallback safety
-          onDrag={(e, data) => handleDrag(item.id, e, data)}
-        >
-          <div
-            style={{
-              position: "absolute",
-              padding: "8px 12px",
-              background: "rgba(0,0,0,0.05)",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              cursor: "move",
-              fontSize: "16px",
-              fontWeight: "bold",
-            }}
-          >
-            {item.content}
-          </div>
-        </Draggable>
-      ))}
+      <Rnd
+        size={{ width: box.width, height: box.height }}
+        position={{ x: box.x, y: box.y }}
+        onDragStop={(e, d) => setBox({ ...box, x: d.x, y: d.y })}
+        onResizeStop={(e, direction, ref, delta, position) => {
+          setBox({
+            width: parseInt(ref.style.width),
+            height: parseInt(ref.style.height),
+            ...position,
+          });
+        }}
+        bounds="parent"
+        style={{
+          border: "1px solid red",
+          background: "rgba(255,0,0,0.1)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "move",
+        }}
+      >
+        {text}
+      </Rnd>
     </div>
-  )
+  );
 }
