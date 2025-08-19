@@ -57,8 +57,8 @@ export default function LayoutEditor({ elements = [], setElements }) {
 
       <div
         style={{
-          width: "280px",
-          height: "280px",
+          width: "400px",
+          height: "400px",
           position: "relative",
           border: "2px dashed gray",
           background: "white",
