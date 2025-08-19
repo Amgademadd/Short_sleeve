@@ -2,81 +2,63 @@ import React, { useMemo } from "react";
 import { Decal, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-// ✅ Utility: Create text texture with alignment support
-function useTextTexture(text, options = {}, align = "center", vAlign = "middle") {
+function useTextTexture(text, options = {}) {
   return useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 512;
     const ctx = canvas.getContext("2d");
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = options.color || "blue";
     ctx.font = options.font || "bold 80px Arial";
-
-    // Horizontal alignment
-    if (align === "left") ctx.textAlign = "left";
-    else if (align === "right") ctx.textAlign = "right";
-    else ctx.textAlign = "center";
-
-    // Vertical alignment
-    if (vAlign === "top") ctx.textBaseline = "top";
-    else if (vAlign === "bottom") ctx.textBaseline = "bottom";
-    else ctx.textBaseline = "middle";
-
-    const x =
-      align === "left"
-        ? 0
-        : align === "right"
-        ? canvas.width
-        : canvas.width / 2;
-
-    const y =
-      vAlign === "top"
-        ? 0
-        : vAlign === "bottom"
-        ? canvas.height
-        : canvas.height / 2;
-
-    ctx.fillText(text, x, y);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
     return new THREE.CanvasTexture(canvas);
-  }, [text, options, align, vAlign]);
+  }, [text, options]);
 }
 
 export default function Tshirt({ text, box, activeSide }) {
   const { nodes, materials } = useGLTF("/models/tshirt.glb");
+  const textTexture = useTextTexture(text, { color: "blue" });
 
-  // Editor dimensions (match your LayoutEditor size)
-  const editorWidth = 300;
+  // Get bounding boxes of each mesh
+  const bounds = {};
+  ["Object_10", "Object_14", "Object_18", "Object_20"].forEach((key) => {
+    const geom = nodes[key].geometry;
+    geom.computeBoundingBox();
+    bounds[key] = geom.boundingBox.clone();
+  });
+
+  // Map editor size to mesh bounding box
+  const editorWidth = 300; // must match LayoutEditor
   const editorHeight = 400;
 
-  // Decide alignment based on drag box
-  let align = "center";
-  if (box?.x < editorWidth * 0.33) align = "left";
-  else if (box?.x > editorWidth * 0.66) align = "right";
-
-  let vAlign = "middle";
-  if (box?.y < editorHeight * 0.33) vAlign = "top";
-  else if (box?.y > editorHeight * 0.66) vAlign = "bottom";
-
-  const textTexture = useTextTexture(text, { color: "blue" }, align, vAlign);
-
-  // Position + scale mapping
-  const posY = 1.5 - (box?.y || 0) / 100;
-  const posX = (box?.x || 0) / 200;
-  const scale = [(box?.width || 100) / 200, (box?.height || 100) / 200, 1];
-
-  // Active mesh → side mapping
   const sideConfig = {
-    front: { key: "Object_10", pos: [posX, posY, 0.25], rot: [0, 0, 0] },
-    back: { key: "Object_14", pos: [posX, posY, -0.25], rot: [0, Math.PI, 0] },
-    right: { key: "Object_18", pos: [0.4, posY, posX], rot: [0, Math.PI / 2, 0] },
-    left: { key: "Object_20", pos: [-0.4, posY, posX], rot: [0, -Math.PI / 2, 0] },
+    front: { key: "Object_10", rot: [0, 0, 0] },
+    back: { key: "Object_14", rot: [0, Math.PI, 0] },
+    right: { key: "Object_18", rot: [0, Math.PI / 2, 0] },
+    left: { key: "Object_20", rot: [0, -Math.PI / 2, 0] },
   };
 
-  const { key, pos, rot } = sideConfig[activeSide];
+  const { key, rot } = sideConfig[activeSide];
+  const bbox = bounds[key];
+
+  // Normalize editor box coords
+  const normX = (box?.x || 0) / editorWidth;
+  const normY = (box?.y || 0) / editorHeight;
+
+  // Position inside mesh bounding box
+  const posX = THREE.MathUtils.lerp(bbox.min.x, bbox.max.x, normX);
+  const posY = THREE.MathUtils.lerp(bbox.max.y, bbox.min.y, normY); // invert Y
+  const posZ = (bbox.min.z + bbox.max.z) / 2;
+
+  // Scale mapping
+  const scaleX =
+    ((box?.width || 100) / editorWidth) * (bbox.max.x - bbox.min.x);
+  const scaleY =
+    ((box?.height || 100) / editorHeight) * (bbox.max.y - bbox.min.y);
 
   return (
     <group dispose={null} position={[0, -3.8, 0]} scale={[3, 3, 3]}>
@@ -88,9 +70,9 @@ export default function Tshirt({ text, box, activeSide }) {
       <mesh geometry={nodes.Object_18.geometry} material={materials.Sleeves_FRONT_2669} />
       <mesh geometry={nodes.Object_20.geometry} material={materials.Sleeves_FRONT_2669} />
 
-      {/* Active decal only on selected mesh */}
+      {/* Decal inside active mesh */}
       <mesh geometry={nodes[key].geometry} material={nodes[key].material}>
-        <Decal position={pos} rotation={rot} scale={scale}>
+        <Decal position={[posX, posY, posZ]} rotation={rot} scale={[scaleX, scaleY, 1]}>
           <meshStandardMaterial
             map={textTexture}
             transparent
