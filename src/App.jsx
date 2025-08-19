@@ -1,46 +1,36 @@
 import React, { useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Stage } from "@react-three/drei";
+import Tshirt from "./components/Tshirt";
 import LayoutEditor from "./components/LayoutEditor";
-import Experience from "./components/Experience";
 
 export default function App() {
-  const [box, setBox] = useState({ x: 50, y: 50, width: 120, height: 60 });
-  const [text, setText] = useState("My Text");
-  const [activeSide, setActiveSide] = useState("front");
+  const [elements, setElements] = useState([]); // stores text & image objects
+  const [activeSide, setActiveSide] = useState("front"); // default side
 
   return (
-    <div style={{ display: "flex" }}>
-      {/* UI Side */}
-      <div style={{ width: "300px", padding: "10px", background: "#222", color: "white" }}>
-        <h3>Layout Editor</h3>
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
-
-        {/* Side buttons */}
+    <div style={{ display: "flex", gap: "20px" }}>
+      {/* Left Panel: Layout Editor */}
+      <div>
+        <h3>Layout Editor ({activeSide})</h3>
         <div style={{ marginBottom: "10px" }}>
-          {["front", "back", "left", "right"].map((side) => (
-            <button
-              key={side}
-              style={{
-                margin: "2px",
-                background: activeSide === side ? "orange" : "gray",
-                color: "white",
-              }}
-              onClick={() => setActiveSide(side)}
-            >
-              {side.toUpperCase()}
-            </button>
-          ))}
+          <button onClick={() => setActiveSide("front")}>Front</button>
+          <button onClick={() => setActiveSide("back")}>Back</button>
+          <button onClick={() => setActiveSide("left")}>Left Sleeve</button>
+          <button onClick={() => setActiveSide("right")}>Right Sleeve</button>
         </div>
 
-        <LayoutEditor box={box} setBox={setBox} text={text} />
+        <LayoutEditor elements={elements} setElements={setElements} />
       </div>
 
-      {/* 3D Side */}
-      <div style={{ flex: 1, height: "100vh", background: "black" }}>
-        <Experience text={text} box={box} activeSide={activeSide} />
+      {/* Right Panel: 3D Tshirt */}
+      <div style={{ width: "600px", height: "600px" }}>
+        <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+          <Stage environment="sunset" intensity={0.6} adjustCamera>
+            <Tshirt elements={elements} activeSide={activeSide} />
+          </Stage>
+          <OrbitControls />
+        </Canvas>
       </div>
     </div>
   );
