@@ -1,10 +1,19 @@
-import React, { useRef, useState } from "react";
+// LayoutEditor.jsx
+import React, { useRef, useState, useEffect } from "react";
 import { Rnd } from "react-rnd";
 
-export default function LayoutEditor({ elements = [], setElements, activeSide, shirtColor, setShirtColor }) {
+export default function LayoutEditor({
+  elements = [],
+  setElements,
+  activeSide,
+  shirtColor,
+  setShirtColor,
+}) {
   const fileInputRef = useRef();
   const [selectedId, setSelectedId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
+  // ✅ Add Text
   const addText = () => {
     setElements((prev) => [
       ...prev,
@@ -14,8 +23,8 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
         content: "New Text",
         x: 150,
         y: 150,
-        width: 100,
-        height: 40,
+        width: 120,
+        height: 50,
         fontSize: 24,
         fontFamily: "Arial",
         color: "#000000",
@@ -26,6 +35,7 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
     ]);
   };
 
+  // ✅ Add Image
   const addImage = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -48,11 +58,29 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
     reader.readAsDataURL(file);
   };
 
+  // ✅ Delete element
+  const deleteSelected = () => {
+    if (!selectedId) return;
+    setElements((prev) => prev.filter((el) => el.id !== selectedId));
+    setSelectedId(null);
+  };
+
+  // ✅ Keyboard delete / backspace
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === "Delete" || e.key === "Backspace") && !isEditing) {
+        deleteSelected();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEditing, selectedId]);
+
   const maskMap = {
     front: "/models/tshirt_Front.png",
     back: "/models/tshirt_Back.png",
-    left: "/models/tshirt_Left.png",
-    right: "/models/tshirt_Right.png",
+    left: "/models/tshirt_Right.png",
+    right: "/models/tshirt_Left.png",
   };
 
   const maskImage = maskMap[activeSide];
@@ -66,10 +94,17 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
 
   return (
     <div>
-      {/* Global controls */}
+      {/* Toolbar */}
       <div style={{ marginBottom: "10px" }}>
         <button onClick={addText}>Add Text</button>
         <button onClick={() => fileInputRef.current.click()}>Add Image</button>
+        <button
+          onClick={deleteSelected}
+          disabled={!selectedId}
+          style={{ marginLeft: "5px" }}
+        >
+          Delete
+        </button>
         <input
           type="file"
           ref={fileInputRef}
@@ -78,7 +113,7 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
           onChange={addImage}
         />
 
-        {/* Shirt Color Picker */}
+        {/* Shirt Color */}
         <label style={{ marginLeft: "10px" }}>
           Shirt Color:
           <input
@@ -89,7 +124,7 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
         </label>
       </div>
 
-      {/* Text controls if a text element is selected */}
+      {/* Text controls */}
       {selectedElement && selectedElement.type === "text" && (
         <div style={{ marginBottom: "10px" }}>
           <label>
@@ -199,7 +234,7 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
         </div>
       )}
 
-      {/* Editor area */}
+      {/* Editor */}
       <div
         style={{
           width: `${editorSize.width}px`,
@@ -221,7 +256,10 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
         {elements.map((el) => (
           <Rnd
             key={el.id}
-            size={{ width: el.width, height: el.height }}
+            size={{
+              width: el.width,
+              height: el.type === "text" ? el.height * 1.3 : el.height,
+            }}
             position={{ x: el.x, y: el.y }}
             onClick={() => setSelectedId(el.id)}
             onDragStop={(e, d) =>
@@ -257,17 +295,18 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
           >
             {el.type === "text" ? (
               <div
-                contentEditable
+                contentEditable={el.id === selectedId}
                 suppressContentEditableWarning
-                onInput={(e) =>
+                onFocus={() => setIsEditing(true)}
+                onBlur={(e) => {
+                  setIsEditing(false);
+                  const text = e.currentTarget.textContent;
                   setElements((prev) =>
                     prev.map((item) =>
-                      item.id === el.id
-                        ? { ...item, content: e.currentTarget.textContent }
-                        : item
+                      item.id === el.id ? { ...item, content: text } : item
                     )
-                  )
-                }
+                  );
+                }}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -285,6 +324,10 @@ export default function LayoutEditor({ elements = [], setElements, activeSide, s
                       : el.align === "right"
                       ? "flex-end"
                       : "flex-start",
+                  direction: "ltr",
+                  unicodeBidi: "plaintext",
+                  outline: "none",
+                  userSelect: "text",
                 }}
               >
                 {el.content}

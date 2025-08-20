@@ -1,40 +1,53 @@
+// App.jsx
 import React, { useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage } from "@react-three/drei";
+import { OrbitControls, Stage, Environment } from "@react-three/drei";
 import Tshirt from "./components/Tshirt";
 import LayoutEditor from "./components/LayoutEditor";
 
 export default function App() {
-  const [elements, setElements] = useState([]); // stores text & image objects
-  const [activeSide, setActiveSide] = useState("front"); // default side
+  const [elements, setElements] = useState([]); // design elements
+  const [activeSide, setActiveSide] = useState("front"); // front|back|left|right
+  const [shirtColor, setShirtColor] = useState("#ffffff");
 
   return (
-    <div style={{ display: "flex", gap: "20px" }}>
-      {/* Left Panel: Layout Editor */}
+    <div style={{ display: "flex", gap: 20, padding: 20 }}>
+      {/* Left: controls + editor */}
       <div>
-        <h3>Layout Editor ({activeSide})</h3>
-        <div style={{ marginBottom: "10px" }}>
+        <h3>Layout Editor — side: {activeSide}</h3>
+
+        <div style={{ marginBottom: 10 }}>
           <button onClick={() => setActiveSide("front")}>Front</button>
           <button onClick={() => setActiveSide("back")}>Back</button>
           <button onClick={() => setActiveSide("left")}>Left Sleeve</button>
           <button onClick={() => setActiveSide("right")}>Right Sleeve</button>
         </div>
 
-        {/* ✅ Pass activeSide into LayoutEditor */}
         <LayoutEditor
           elements={elements}
           setElements={setElements}
           activeSide={activeSide}
+          shirtColor={shirtColor}
+          setShirtColor={setShirtColor}
         />
       </div>
 
-      {/* Right Panel: 3D Tshirt */}
-      <div style={{ width: "600px", height: "600px" }}>
+      {/* Right: 3D preview */}
+      <div style={{ width: 680, height: 680, background: "#eee", borderRadius: 6 }}>
         <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
-          <Stage environment="sunset" intensity={0.6} adjustCamera>
-            <Tshirt elements={elements} activeSide={activeSide} />
-          </Stage>
-          <OrbitControls />
+          <React.Suspense fallback={null}>
+            <Stage environment="sunset" intensity={0.6} adjustCamera={false}>
+              <Tshirt
+                elements={elements}
+                activeSide={activeSide}
+                shirtColor={shirtColor}
+              />
+            </Stage>
+
+            <Environment preset="city" />
+          </React.Suspense>
+
+          <OrbitControls enablePan={true} />
         </Canvas>
       </div>
     </div>
