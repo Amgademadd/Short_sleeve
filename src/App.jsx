@@ -20,7 +20,12 @@ export default function App() {
           <button onClick={() => setActiveSide("right")}>Right Sleeve</button>
         </div>
 
-        <LayoutEditor elements={elements} setElements={setElements} />
+        {/* ✅ Pass activeSide into LayoutEditor */}
+        <LayoutEditor
+          elements={elements}
+          setElements={setElements}
+          activeSide={activeSide}
+        />
       </div>
 
       {/* Right Panel: 3D Tshirt */}
