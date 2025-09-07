@@ -4,7 +4,7 @@ import { Decal, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-// ✅ إنشاء texture من النص
+/* === Helpers for generating textures === */
 function makeTextTexture(el) {
   const size = 1024;
   const canvas = document.createElement("canvas");
@@ -22,7 +22,7 @@ function makeTextTexture(el) {
   ctx.textAlign = el.align || "center";
   ctx.textBaseline = "middle";
 
-  // 🟢 دعم سطور متعددة
+  // ✅ multi-line support
   const lines = (el.content || "").split("\n");
   lines.forEach((line, i) => {
     ctx.fillText(line, size / 2, size / 2 + i * fontSize * 1.2);
@@ -37,7 +37,6 @@ function makeTextTexture(el) {
   return tex;
 }
 
-// ✅ إنشاء texture من الإيموجي
 function makeEmojiTexture(el) {
   const size = 512;
   const canvas = document.createElement("canvas");
@@ -60,6 +59,7 @@ function makeEmojiTexture(el) {
   return tex;
 }
 
+/* === Main Tshirt Component === */
 export default function Tshirt({
   elementsBySide = {},
   activeSide = "front",
@@ -69,7 +69,7 @@ export default function Tshirt({
   const [bbox, setBbox] = useState(null);
   const groupRef = useRef();
 
-  // 🟢 حساب حجم ومركز الموديل
+  // ✅ compute bounding box once
   useEffect(() => {
     if (!scene) return;
     const box = new THREE.Box3().setFromObject(scene);
@@ -80,7 +80,7 @@ export default function Tshirt({
     setBbox({ size, center });
   }, [scene]);
 
-  // 🟢 إعدادات كل جانب
+  // ✅ per-side configs
   const sideConfig = {
     front: { key: "Object_10", rotY: 0, axis: "z", depthSign: 1 },
     back: { key: "Object_14", rotY: Math.PI, axis: "z", depthSign: -1 },
@@ -88,7 +88,7 @@ export default function Tshirt({
     left: { key: "Object_20", rotY: -Math.PI / 2, axis: "x", depthSign: -1 },
   };
 
-  // 🟢 دوران تدريجي عند تغيير الوجه
+  // ✅ smooth rotation when changing side
   const targetQuatRef = useRef(new THREE.Quaternion());
   useEffect(() => {
     const q = new THREE.Quaternion();
@@ -105,32 +105,35 @@ export default function Tshirt({
   if (!bbox) return null;
   const { size, center } = bbox;
 
-  const baseMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(shirtColor),
-    roughness: 0.6,
-  });
-
   return (
     <group ref={groupRef} dispose={null} position={[0, 0, 0]} scale={[3, 3, 3]}>
       <group position={[0, -1.287, 0]}>
-        {/* 🟢 Base T-shirt meshes */}
-        {nodes.Object_6 && <mesh geometry={nodes.Object_6.geometry} material={baseMaterial} />}
-        {nodes.Object_8 && <mesh geometry={nodes.Object_8.geometry} material={baseMaterial} />}
+        {/* ✅ Base shirt meshes (reactive color applied) */}
+        {nodes.Object_6 && (
+          <mesh geometry={nodes.Object_6.geometry}>
+            <meshStandardMaterial color={shirtColor} roughness={0.6} />
+          </mesh>
+        )}
+        {nodes.Object_8 && (
+          <mesh geometry={nodes.Object_8.geometry}>
+            <meshStandardMaterial color={shirtColor} roughness={0.6} />
+          </mesh>
+        )}
 
-        {/* 🟢 Render لكل جانب + Decals */}
+        {/* ✅ Apply decals per side */}
         {Object.entries(elementsBySide).map(([sideName, elements]) => {
-          if (sideName === "__editorSize") return null; // ✅ نتجاهل حجم الـ editor
+          if (sideName === "__editorSize") return null;
           const side = sideConfig[sideName];
           if (!side || !nodes[side.key]) return null;
 
-          // ناخد أبعاد الـ editor من LayoutEditor
           const editorWidth = elementsBySide.__editorSize?.width || 400;
           const editorHeight = elementsBySide.__editorSize?.height || 400;
 
           return (
-            <mesh key={sideName} geometry={nodes[side.key].geometry} material={baseMaterial}>
+            <mesh key={sideName} geometry={nodes[side.key].geometry}>
+              <meshStandardMaterial color={shirtColor} roughness={0.6} />
               {elements.map((el, i) => {
-                // 🟢 Normalize position
+                // normalize pos
                 const centerX = el.x + (el.width || 0) / 2;
                 const centerY = el.y + (el.height || 0) / 2;
                 const normX = (centerX / editorWidth) * 2 - 1;
@@ -147,12 +150,12 @@ export default function Tshirt({
                   pos[2] += normX * (size.z / 2);
                 }
 
-                // 🟢 Scale
+                // scale
                 const sx = ((el.width || 0) / editorWidth) * size.x;
                 const sy = ((el.height || 0) / editorHeight) * size.y;
                 const scale = [sx || 0.1, sy || 0.1, 1];
 
-                // 🟢 Rotation
+                // base rotation
                 let rotation = [0, 0, 0];
                 if (side.axis === "z") {
                   if (sideName === "back") rotation = [0, Math.PI, 0];
@@ -160,12 +163,11 @@ export default function Tshirt({
                   rotation = [0, Math.PI / 2, 0];
                   if (sideName === "left") rotation = [0, -Math.PI / 2, 0];
                 }
-
-                // نضيف دوران العنصر نفسه
+                // add element rotation
                 const extraRot = (el.rotation || 0) * (Math.PI / 180);
                 rotation = [rotation[0], rotation[1], extraRot];
 
-                // 🟢 اختيار texture حسب النوع
+                // texture
                 const map =
                   el.type === "text"
                     ? makeTextTexture(el)

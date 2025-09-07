@@ -46,7 +46,6 @@ function CaptureHelper({ onReady }) {
           { name: "left", a: -Math.PI / 2 },
         ];
 
-
         const zip = new JSZip();
         for (const s of angles) {
           const b64 = await snapAtAngle(s.a);
@@ -74,20 +73,19 @@ function CameraController({ activeSide }) {
     switch (activeSide) {
       case "front":
         targetAngle = 0;
-      break;
+        break;
       case "right":
-         targetAngle = Math.PI / 2;
-      break;
+        targetAngle = Math.PI / 2;
+        break;
       case "back":
-         targetAngle = Math.PI;
-      break;
+        targetAngle = Math.PI;
+        break;
       case "left":
-          targetAngle = -Math.PI / 2;
-      break;
+        targetAngle = -Math.PI / 2;
+        break;
       default:
-          targetAngle = 0;
+        targetAngle = 0;
     }
-
 
     const radius = 3;
     const height = 1.5;
@@ -126,9 +124,9 @@ export default function App() {
     left: [],
     right: [],
   });
-  const [hoodieColor, setHoodieColor] = useState("#ffffff");
+  const [shirtColor, setShirtColor] = useState("#ffffff"); // ✅ renamed
 
-  const [device, setDevice] = useState("desktop"); // ✅ device state
+  const [device, setDevice] = useState("desktop");
 
   const captureApiRef = useRef(null);
   const setCaptureApi = (api) => (captureApiRef.current = api);
@@ -149,24 +147,19 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  /* ==== Button Styles ==== */
-/* ==== Button Styles ==== */
-const buttonStyle = {
-  background: "#ff6600",
-  color: "#fff",
-  padding: "10px 15px", // ✅ أصغر
-  borderRadius: "8px",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "600",
-  fontSize: "15px", // ✅ أصغر
-  transition: "all 0.2s ease",
-};
+  const buttonStyle = {
+    background: "#ff6600",
+    color: "#fff",
+    padding: "10px 15px",
+    borderRadius: "8px",
+    border: "none",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "15px",
+    transition: "all 0.2s ease",
+  };
 
-const hoverStyle = {
-  background: "#cc5200",
-};
-
+  const hoverStyle = { background: "#cc5200" };
 
   return (
     <div
@@ -186,7 +179,8 @@ const hoverStyle = {
               : device === "tablet"
               ? "0 0 60%"
               : "0 0 50%",
-          width: device === "mobile" ? "100%" : device === "tablet" ? "60%" : "50%",
+          width:
+            device === "mobile" ? "100%" : device === "tablet" ? "60%" : "50%",
           padding: "12px",
           overflowY: "auto",
           background: "#1c1f26",
@@ -224,7 +218,7 @@ const hoverStyle = {
 
         <div style={{ margin: "8px 0 14px 0" }}>
           <button
-            style={ buttonStyle}
+            style={buttonStyle}
             onMouseOver={(e) =>
               (e.currentTarget.style.background = hoverStyle.background)
             }
@@ -242,8 +236,8 @@ const hoverStyle = {
           elementsBySide={elementsBySide}
           setElementsBySide={setElementsBySide}
           activeSide={activeSide}
-          hoodieColor={hoodieColor}
-          setHoodieColor={setHoodieColor}
+          shirtColor={shirtColor}       // ✅ fixed
+          setShirtColor={setShirtColor} // ✅ fixed
         />
       </div>
 
@@ -251,7 +245,8 @@ const hoverStyle = {
       <div
         style={{
           flex: "1",
-          width: device === "mobile" ? "100%" : device === "tablet" ? "40%" : "50%",
+          width:
+            device === "mobile" ? "100%" : device === "tablet" ? "40%" : "50%",
           height: device === "mobile" ? "400px" : "100%",
           background: "#1c1f26",
           display: "flex",
@@ -272,7 +267,7 @@ const hoverStyle = {
           <Canvas camera={{ position: [0, 1.2, 2.5], fov: 45 }}>
             <ambientLight intensity={0.6} />
             <directionalLight position={[5, 5, 5]} intensity={0.8} />
-            <Tshirt elementsBySide={elementsBySide} hoodieColor={hoodieColor} />
+            <Tshirt elementsBySide={elementsBySide} shirtColor={shirtColor} /> {/* ✅ fixed */}
             <CameraController activeSide={activeSide} />
             <CaptureHelper onReady={setCaptureApi} />
           </Canvas>

@@ -22,7 +22,7 @@ export default function LayoutEditor({
   const elements = elementsBySide[activeSide] || [];
   const selectedElement = elements.find((el) => el.id === selectedId);
 
-  // 🆕 حفظ حجم الـ wrapper عشان 3D يبقى aligned
+  // ✅ save wrapper size for 3D alignment
   useEffect(() => {
     if (wrapperRef.current) {
       const { offsetWidth, offsetHeight } = wrapperRef.current;
@@ -33,7 +33,7 @@ export default function LayoutEditor({
     }
   }, [activeSide, setElementsBySide]);
 
-  // -------- Helpers --------
+  /* -------- Helpers -------- */
   const updateSelected = (changes) => {
     if (!selectedId) return;
     setElementsBySide((prev) => ({
@@ -53,7 +53,7 @@ export default function LayoutEditor({
     setSelectedId(null);
   };
 
-  // -------- Add Elements --------
+  /* -------- Add Elements -------- */
   const addText = () => {
     const id = Date.now();
     setElementsBySide((prev) => ({
@@ -154,16 +154,7 @@ export default function LayoutEditor({
     setActiveTab("none");
   };
 
-  // -------- Download --------
-  const downloadImage = () => {
-    const canvas = canvasRef.current;
-    const link = document.createElement("a");
-    link.download = "design.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
-  // -------- Masks --------
+  /* -------- Masks -------- */
   const maskMap = {
     front: "/models/tshirt_Front.png",
     back: "/models/tshirt_Back.png",
@@ -194,31 +185,35 @@ export default function LayoutEditor({
           >
             Emojis
           </button>
-          <div style={{ marginTop: "1rem" }}>
-    <button
-      onClick={() => document.getElementById("shirtColorPicker").click()}
-      style={{
-        width: "100%",
-        padding: "10px",
-        background: shirtColor,
-        color: "#fff",
-        fontWeight: "bold",
-        border: "none",
-        borderRadius: "8px",
-        cursor: "pointer",
-      }}
-    >
-      Shirt Color
-    </button>
 
-    <input
-      id="shirtColorPicker"
-      type="color"
-      value={shirtColor}
-      onChange={(e) => setShirtColor(e.target.value)}
-      style={{ display: "none" }}
-    />
-  </div>
+          {/* ✅ Shirt Color Picker with live swatch */}
+          <div style={{ marginTop: "1rem" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  border: "2px solid #ccc",
+                  background: shirtColor,
+                }}
+              />
+              <span style={{ color: "#fff" }}>Shirt Color</span>
+              <input
+                type="color"
+                value={shirtColor}
+                onChange={(e) => setShirtColor(e.target.value)}
+                style={{ display: "none" }}
+              />
+            </label>
+          </div>
         </div>
 
         {/* Shapes */}
@@ -238,7 +233,7 @@ export default function LayoutEditor({
           </div>
         )}
 
-        {/* Text Options */}
+        {/* Element Options (Text, Image, Shape, Emoji) */}
         {selectedElement?.type === "text" && (
           <div className="options-panel">
             <label>
@@ -296,7 +291,6 @@ export default function LayoutEditor({
           </div>
         )}
 
-        {/* Image Options */}
         {selectedElement?.type === "image" && (
           <div className="options-panel">
             <label>
@@ -318,7 +312,6 @@ export default function LayoutEditor({
           </div>
         )}
 
-        {/* Shape Options */}
         {selectedElement?.type === "shape" && (
           <div className="options-panel">
             <label>
@@ -335,7 +328,6 @@ export default function LayoutEditor({
           </div>
         )}
 
-        {/* Emoji Options */}
         {selectedElement?.type === "emoji" && (
           <div className="options-panel">
             <label>
@@ -445,12 +437,7 @@ export default function LayoutEditor({
         style={{ display: "none" }}
         onChange={addImage}
       />
-      <canvas
-        ref={canvasRef}
-        width={1024}
-        height={1024}
-        style={{ display: "none" }}
-      />
+      <canvas ref={canvasRef} width={1024} height={1024} style={{ display: "none" }} />
     </div>
   );
 }
