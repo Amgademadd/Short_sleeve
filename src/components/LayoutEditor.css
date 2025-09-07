@@ -1,0 +1,185 @@
+.layout-editor {
+  display: flex;
+  height: 60%;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.sidebar {
+  width: 300px;
+  height: 120%;
+  padding: 16px;
+  border-right: 1px solid #ccc;
+  background: #1e1e1e;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar h3 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sidebar button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #333;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.sidebar button:hover {
+  background: #555;
+  transform: scale(1.05);
+}
+
+.options-panel {
+  display: grid;
+  gap: 10px;
+  background: #222;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.row-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.canvas-area {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.canvas-wrapper {
+  width: 512px;
+  height: 512px;
+  position: relative;
+  background: white;
+  border: 2px dashed gray;
+  border-radius: 6px;
+  overflow: hidden;
+
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+.rnd {
+  border: 1px solid transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  cursor: grab;
+}
+
+.rnd.active {
+  border: 2px solid blue;
+}
+
+.text-element {
+  width: 100%;
+  text-align: center;
+  line-height: 1.2;
+  user-select: text;
+}
+
+.image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-wrapper img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.shape-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.shape-rect {
+  width: 100%;
+  height: 100%;
+}
+
+.options-panel label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.options-panel input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.options-panel input[type="range"] {
+  width: 100%;
+  accent-color: #ff6600;
+  cursor: pointer;
+}
+
+.options-panel select {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #333;
+  color: #fff;
+}
+
+.options-panel button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #ff6600;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.options-panel button:hover {
+  background: #cc5200;
+  transform: scale(1.05);
+}
+
+.options-panel button.delete {
+  background: #d9534f;
+}
+
+.options-panel button.delete:hover {
+  background: #b52b27;
+}

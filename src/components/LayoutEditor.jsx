@@ -1,347 +1,456 @@
 // LayoutEditor.jsx
 import React, { useRef, useState, useEffect } from "react";
 import { Rnd } from "react-rnd";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
+import "./LayoutEditor.css";
 
 export default function LayoutEditor({
-  elements = [],
-  setElements,
+  elementsBySide,
+  setElementsBySide,
   activeSide,
   shirtColor,
   setShirtColor,
 }) {
   const fileInputRef = useRef();
-  const [selectedId, setSelectedId] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const canvasRef = useRef();
+  const wrapperRef = useRef();
 
-  // ✅ Add Text
-  const addText = () => {
-    setElements((prev) => [
+  const [selectedId, setSelectedId] = useState(null);
+  const [activeTab, setActiveTab] = useState("none");
+
+  const elements = elementsBySide[activeSide] || [];
+  const selectedElement = elements.find((el) => el.id === selectedId);
+
+  // 🆕 حفظ حجم الـ wrapper عشان 3D يبقى aligned
+  useEffect(() => {
+    if (wrapperRef.current) {
+      const { offsetWidth, offsetHeight } = wrapperRef.current;
+      setElementsBySide((prev) => ({
+        ...prev,
+        __editorSize: { width: offsetWidth, height: offsetHeight },
+      }));
+    }
+  }, [activeSide, setElementsBySide]);
+
+  // -------- Helpers --------
+  const updateSelected = (changes) => {
+    if (!selectedId) return;
+    setElementsBySide((prev) => ({
       ...prev,
-      {
-        id: Date.now(),
-        type: "text",
-        content: "New Text",
-        x: 150,
-        y: 150,
-        width: 120,
-        height: 50,
-        fontSize: 24,
-        fontFamily: "Arial",
-        color: "#000000",
-        bold: false,
-        italic: false,
-        align: "center",
-      },
-    ]);
+      [activeSide]: prev[activeSide].map((el) =>
+        el.id === selectedId ? { ...el, ...changes } : el
+      ),
+    }));
   };
 
-  // ✅ Add Image
+  const deleteSelected = () => {
+    if (!selectedId) return;
+    setElementsBySide((prev) => ({
+      ...prev,
+      [activeSide]: prev[activeSide].filter((el) => el.id !== selectedId),
+    }));
+    setSelectedId(null);
+  };
+
+  // -------- Add Elements --------
+  const addText = () => {
+    const id = Date.now();
+    setElementsBySide((prev) => ({
+      ...prev,
+      [activeSide]: [
+        ...(prev[activeSide] || []),
+        {
+          id,
+          type: "text",
+          content: "New Text",
+          x: 150,
+          y: 150,
+          width: 160,
+          height: 50,
+          fontSize: 28,
+          fontFamily: "Arial",
+          color: "#000000",
+          bold: false,
+          italic: false,
+          align: "center",
+          rotation: 0,
+        },
+      ],
+    }));
+    setSelectedId(id);
+  };
+
   const addImage = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setElements((prev) => [
+      const id = Date.now();
+      setElementsBySide((prev) => ({
         ...prev,
-        {
-          id: Date.now(),
-          type: "image",
-          content: ev.target.result,
-          x: 140,
-          y: 140,
-          width: 120,
-          height: 120,
-        },
-      ]);
+        [activeSide]: [
+          ...(prev[activeSide] || []),
+          {
+            id,
+            type: "image",
+            content: ev.target.result,
+            x: 120,
+            y: 120,
+            width: 160,
+            height: 160,
+            rotation: 0,
+            opacity: 1,
+            flipped: false,
+          },
+        ],
+      }));
+      setSelectedId(id);
     };
     reader.readAsDataURL(file);
   };
 
-  // ✅ Delete element
-  const deleteSelected = () => {
-    if (!selectedId) return;
-    setElements((prev) => prev.filter((el) => el.id !== selectedId));
-    setSelectedId(null);
+  const addShape = (shapeType) => {
+    const id = Date.now();
+    setElementsBySide((prev) => ({
+      ...prev,
+      [activeSide]: [
+        ...(prev[activeSide] || []),
+        {
+          id,
+          type: "shape",
+          shapeType,
+          x: 180,
+          y: 180,
+          width: 100,
+          height: 100,
+          color: "#ff0000",
+          rotation: 0,
+        },
+      ],
+    }));
+    setSelectedId(id);
   };
 
-  // ✅ Keyboard delete / backspace
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.key === "Delete" || e.key === "Backspace") && !isEditing) {
-        deleteSelected();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEditing, selectedId]);
+  const addEmoji = (emoji) => {
+    const id = Date.now();
+    setElementsBySide((prev) => ({
+      ...prev,
+      [activeSide]: [
+        ...(prev[activeSide] || []),
+        {
+          id,
+          type: "emoji",
+          content: emoji.native,
+          x: 150,
+          y: 150,
+          width: 80,
+          height: 80,
+          rotation: 0,
+        },
+      ],
+    }));
+    setSelectedId(id);
+    setActiveTab("none");
+  };
 
+  // -------- Download --------
+  const downloadImage = () => {
+    const canvas = canvasRef.current;
+    const link = document.createElement("a");
+    link.download = "design.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  // -------- Masks --------
   const maskMap = {
     front: "/models/tshirt_Front.png",
     back: "/models/tshirt_Back.png",
-    left: "/models/tshirt_Right.png",
-    right: "/models/tshirt_Left.png",
+    left: "/models/tshirt_Left.png",
+    right: "/models/tshirt_Right.png",
   };
-
   const maskImage = maskMap[activeSide];
 
-  const editorSize =
-    activeSide === "left" || activeSide === "right"
-      ? { width: 500, height: 400 }
-      : { width: 400, height: 400 };
-
-  const selectedElement = elements.find((el) => el.id === selectedId);
-
   return (
-    <div>
-      {/* Toolbar */}
-      <div style={{ marginBottom: "10px" }}>
-        <button onClick={addText}>Add Text</button>
-        <button onClick={() => fileInputRef.current.click()}>Add Image</button>
-        <button
-          onClick={deleteSelected}
-          disabled={!selectedId}
-          style={{ marginLeft: "5px" }}
-        >
-          Delete
-        </button>
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          style={{ display: "none" }}
-          onChange={addImage}
-        />
-
-        {/* Shirt Color */}
-        <label style={{ marginLeft: "10px" }}>
-          Shirt Color:
-          <input
-            type="color"
-            value={shirtColor}
-            onChange={(e) => setShirtColor(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {/* Text controls */}
-      {selectedElement && selectedElement.type === "text" && (
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            Font:
-            <select
-              value={selectedElement.fontFamily}
-              onChange={(e) =>
-                setElements((prev) =>
-                  prev.map((el) =>
-                    el.id === selectedElement.id
-                      ? { ...el, fontFamily: e.target.value }
-                      : el
-                  )
-                )
-              }
-            >
-              <option value="Arial">Arial</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Courier New">Courier New</option>
-              <option value="Verdana">Verdana</option>
-            </select>
-          </label>
-
-          <label style={{ marginLeft: "10px" }}>
-            Size:
-            <input
-              type="number"
-              value={selectedElement.fontSize}
-              min="8"
-              max="100"
-              onChange={(e) =>
-                setElements((prev) =>
-                  prev.map((el) =>
-                    el.id === selectedElement.id
-                      ? { ...el, fontSize: parseInt(e.target.value) }
-                      : el
-                  )
-                )
-              }
-            />
-          </label>
-
-          <label style={{ marginLeft: "10px" }}>
-            Color:
-            <input
-              type="color"
-              value={selectedElement.color}
-              onChange={(e) =>
-                setElements((prev) =>
-                  prev.map((el) =>
-                    el.id === selectedElement.id
-                      ? { ...el, color: e.target.value }
-                      : el
-                  )
-                )
-              }
-            />
-          </label>
-
+    <div className="layout-editor">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h3>Customize</h3>
+        <div className="tabs">
+          <button onClick={addText}>Text</button>
+          <button onClick={() => fileInputRef.current.click()}>Image</button>
           <button
-            style={{ marginLeft: "10px" }}
             onClick={() =>
-              setElements((prev) =>
-                prev.map((el) =>
-                  el.id === selectedElement.id
-                    ? { ...el, bold: !el.bold }
-                    : el
-                )
-              )
+              setActiveTab(activeTab === "shapes" ? "none" : "shapes")
             }
           >
-            {selectedElement.bold ? "Unbold" : "Bold"}
+            Shapes
           </button>
-
           <button
-            style={{ marginLeft: "5px" }}
             onClick={() =>
-              setElements((prev) =>
-                prev.map((el) =>
-                  el.id === selectedElement.id
-                    ? { ...el, italic: !el.italic }
-                    : el
-                )
-              )
+              setActiveTab(activeTab === "emojis" ? "none" : "emojis")
             }
           >
-            {selectedElement.italic ? "Unitalic" : "Italic"}
+            Emojis
           </button>
+          <div style={{ marginTop: "1rem" }}>
+    <button
+      onClick={() => document.getElementById("shirtColorPicker").click()}
+      style={{
+        width: "100%",
+        padding: "10px",
+        background: shirtColor,
+        color: "#fff",
+        fontWeight: "bold",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+      }}
+    >
+      Shirt Color
+    </button>
 
-          <select
-            style={{ marginLeft: "10px" }}
-            value={selectedElement.align}
-            onChange={(e) =>
-              setElements((prev) =>
-                prev.map((el) =>
-                  el.id === selectedElement.id
-                    ? { ...el, align: e.target.value }
-                    : el
-                )
-              )
-            }
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
+    <input
+      id="shirtColorPicker"
+      type="color"
+      value={shirtColor}
+      onChange={(e) => setShirtColor(e.target.value)}
+      style={{ display: "none" }}
+    />
+  </div>
         </div>
-      )}
 
-      {/* Editor */}
-      <div
-        style={{
-          width: `${editorSize.width}px`,
-          height: `${editorSize.height}px`,
-          position: "relative",
-          background: "white",
-          border: "2px dashed gray",
-          WebkitMaskImage: `url(${maskImage})`,
-          WebkitMaskRepeat: "no-repeat",
-          WebkitMaskSize: "contain",
-          WebkitMaskPosition: "center",
-          maskImage: `url(${maskImage})`,
-          maskRepeat: "no-repeat",
-          maskSize: "contain",
-          maskPosition: "center",
-          overflow: "hidden",
-        }}
-      >
-        {elements.map((el) => (
-          <Rnd
-            key={el.id}
-            size={{
-              width: el.width,
-              height: el.type === "text" ? el.height * 1.3 : el.height,
-            }}
-            position={{ x: el.x, y: el.y }}
-            onClick={() => setSelectedId(el.id)}
-            onDragStop={(e, d) =>
-              setElements((prev) =>
-                prev.map((item) =>
-                  item.id === el.id ? { ...item, x: d.x, y: d.y } : item
-                )
-              )
-            }
-            onResizeStop={(e, dir, ref, delta, pos) =>
-              setElements((prev) =>
-                prev.map((item) =>
-                  item.id === el.id
-                    ? {
-                        ...item,
-                        width: parseInt(ref.style.width),
-                        height: parseInt(ref.style.height),
-                        ...pos,
-                      }
-                    : item
-                )
-              )
-            }
-            bounds="parent"
-            style={{
-              border: el.id === selectedId ? "2px solid blue" : "1px solid red",
-              background: "rgba(255,0,0,0.05)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              cursor: "move",
-            }}
-          >
-            {el.type === "text" ? (
-              <div
-                contentEditable={el.id === selectedId}
-                suppressContentEditableWarning
-                onFocus={() => setIsEditing(true)}
-                onBlur={(e) => {
-                  setIsEditing(false);
-                  const text = e.currentTarget.textContent;
-                  setElements((prev) =>
-                    prev.map((item) =>
-                      item.id === el.id ? { ...item, content: text } : item
-                    )
-                  );
-                }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  fontSize: `${el.fontSize}px`,
-                  fontFamily: el.fontFamily,
-                  color: el.color,
-                  fontWeight: el.bold ? "bold" : "normal",
-                  fontStyle: el.italic ? "italic" : "normal",
-                  textAlign: el.align,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    el.align === "center"
-                      ? "center"
-                      : el.align === "right"
-                      ? "flex-end"
-                      : "flex-start",
-                  direction: "ltr",
-                  unicodeBidi: "plaintext",
-                  outline: "none",
-                  userSelect: "text",
-                }}
-              >
-                {el.content}
-              </div>
-            ) : (
-              <img
-                src={el.content}
-                alt=""
-                style={{ maxWidth: "100%", maxHeight: "100%" }}
+        {/* Shapes */}
+        {activeTab === "shapes" && (
+          <div className="options-panel">
+            <h4>Shapes</h4>
+            <button onClick={() => addShape("square")}>⬛ Square</button>
+            <button onClick={() => addShape("circle")}>⚪ Circle</button>
+          </div>
+        )}
+
+        {/* Emojis */}
+        {activeTab === "emojis" && (
+          <div className="options-panel">
+            <h4>Pick an Emoji</h4>
+            <Picker data={data} onEmojiSelect={addEmoji} />
+          </div>
+        )}
+
+        {/* Text Options */}
+        {selectedElement?.type === "text" && (
+          <div className="options-panel">
+            <label>
+              Color{" "}
+              <input
+                type="color"
+                value={selectedElement.color}
+                onChange={(e) => updateSelected({ color: e.target.value })}
               />
-            )}
-          </Rnd>
-        ))}
+            </label>
+            <label>
+              Font Size{" "}
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={selectedElement.fontSize}
+                onChange={(e) =>
+                  updateSelected({ fontSize: parseInt(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Font
+              <select
+                value={selectedElement.fontFamily}
+                onChange={(e) => updateSelected({ fontFamily: e.target.value })}
+              >
+                <option>Arial</option>
+                <option>Verdana</option>
+                <option>Times New Roman</option>
+                <option>Courier New</option>
+                <option>Georgia</option>
+              </select>
+            </label>
+            <div className="row-buttons">
+              <button
+                onClick={() =>
+                  updateSelected({ bold: !selectedElement.bold })
+                }
+              >
+                {selectedElement.bold ? "Unbold" : "Bold"}
+              </button>
+              <button
+                onClick={() =>
+                  updateSelected({ italic: !selectedElement.italic })
+                }
+              >
+                {selectedElement.italic ? "Unitalic" : "Italic"}
+              </button>
+            </div>
+            <button className="delete" onClick={deleteSelected}>
+              ❌ Delete
+            </button>
+          </div>
+        )}
+
+        {/* Image Options */}
+        {selectedElement?.type === "image" && (
+          <div className="options-panel">
+            <label>
+              Opacity{" "}
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.1"
+                value={selectedElement.opacity}
+                onChange={(e) =>
+                  updateSelected({ opacity: parseFloat(e.target.value) })
+                }
+              />
+            </label>
+            <button className="delete" onClick={deleteSelected}>
+              ❌ Delete
+            </button>
+          </div>
+        )}
+
+        {/* Shape Options */}
+        {selectedElement?.type === "shape" && (
+          <div className="options-panel">
+            <label>
+              Color{" "}
+              <input
+                type="color"
+                value={selectedElement.color}
+                onChange={(e) => updateSelected({ color: e.target.value })}
+              />
+            </label>
+            <button className="delete" onClick={deleteSelected}>
+              ❌ Delete
+            </button>
+          </div>
+        )}
+
+        {/* Emoji Options */}
+        {selectedElement?.type === "emoji" && (
+          <div className="options-panel">
+            <label>
+              Size{" "}
+              <input
+                type="range"
+                min="20"
+                max="200"
+                value={selectedElement.width}
+                onChange={(e) =>
+                  updateSelected({
+                    width: parseInt(e.target.value),
+                    height: parseInt(e.target.value),
+                  })
+                }
+              />
+            </label>
+            <button className="delete" onClick={deleteSelected}>
+              ❌ Delete
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Canvas */}
+      <div className="canvas-area">
+        <div
+          ref={wrapperRef}
+          className="canvas-wrapper"
+          style={{
+            WebkitMaskImage: `url(${maskImage})`,
+            maskImage: `url(${maskImage})`,
+          }}
+        >
+          {elements.map((el) => (
+            <Rnd
+              key={el.id}
+              size={{ width: el.width, height: el.height }}
+              position={{ x: el.x, y: el.y }}
+              onMouseDown={() => setSelectedId(el.id)}
+              onDragStop={(e, d) => updateSelected({ x: d.x, y: d.y })}
+              onResizeStop={(e, dir, ref, delta, pos) =>
+                updateSelected({
+                  width: parseInt(ref.style.width, 10),
+                  height: parseInt(ref.style.height, 10),
+                  ...pos,
+                })
+              }
+              bounds="parent"
+              className={`rnd ${el.id === selectedId ? "active" : ""}`}
+            >
+              {el.type === "emoji" ? (
+                <div
+                  style={{
+                    fontSize: `${Math.min(el.width, el.height)}px`,
+                    lineHeight: 1,
+                  }}
+                >
+                  {el.content}
+                </div>
+              ) : el.type === "text" ? (
+                <div
+                  className="text-element"
+                  style={{
+                    fontSize: `${el.fontSize}px`,
+                    fontFamily: el.fontFamily,
+                    color: el.color,
+                    fontWeight: el.bold ? "bold" : "normal",
+                    fontStyle: el.italic ? "italic" : "normal",
+                  }}
+                  contentEditable={el.id === selectedId}
+                  suppressContentEditableWarning
+                  onBlur={(e) =>
+                    updateSelected({ content: e.currentTarget.textContent })
+                  }
+                >
+                  {el.content}
+                </div>
+              ) : el.type === "image" ? (
+                <div className="image-wrapper">
+                  <img
+                    src={el.content}
+                    alt=""
+                    style={{
+                      opacity: el.opacity || 1,
+                      transform: el.flipped ? "scaleX(-1)" : "none",
+                    }}
+                  />
+                </div>
+              ) : el.type === "shape" ? (
+                el.shapeType === "circle" ? (
+                  <div className="shape-circle" style={{ background: el.color }} />
+                ) : (
+                  <div className="shape-rect" style={{ background: el.color }} />
+                )
+              ) : null}
+            </Rnd>
+          ))}
+        </div>
+      </div>
+
+      {/* Hidden Inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={addImage}
+      />
+      <canvas
+        ref={canvasRef}
+        width={1024}
+        height={1024}
+        style={{ display: "none" }}
+      />
     </div>
   );
 }
